@@ -1,6 +1,6 @@
 #include <catch2/catch_all.hpp>
 #include <cstdint>
-#include "world.hpp"
+#include <cask/world/world.hpp>
 
 struct Vec3 {
     float x, y, z;

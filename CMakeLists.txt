@@ -14,13 +14,17 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(Catch2)
 
 add_library(cask_redux
-    src/engine.cpp
+    src/cask/engine/engine.cpp
+    src/cask/world/abi.cpp
 )
-target_include_directories(cask_redux PUBLIC src)
+target_include_directories(cask_redux PUBLIC include src)
 
 add_executable(cask_redux_tests
     spec/engine_spec.cpp
     spec/world_spec.cpp
+    spec/abi_spec.cpp
+    spec/plugin_spec.cpp
+    spec/manifest_spec.cpp
 )
 target_link_libraries(cask_redux_tests PRIVATE cask_redux Catch2::Catch2WithMain)
 

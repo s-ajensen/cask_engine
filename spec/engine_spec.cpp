@@ -1,5 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
-#include "engine.hpp"
+#include <cask/engine/engine.hpp>
 
 struct FakeClock {
     float current_time = 0.0f;

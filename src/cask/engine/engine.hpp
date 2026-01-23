@@ -1,6 +1,6 @@
 #pragma once
 
-#include "world.hpp"
+#include <cask/world/world.hpp>
 #include <optional>
 #include <vector>
 
