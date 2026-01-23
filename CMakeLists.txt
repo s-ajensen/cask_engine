@@ -25,6 +25,7 @@ add_executable(cask_redux_tests
     spec/abi_spec.cpp
     spec/plugin_spec.cpp
     spec/manifest_spec.cpp
+    spec/graph_spec.cpp
 )
 target_link_libraries(cask_redux_tests PRIVATE cask_redux Catch2::Catch2WithMain)
 
