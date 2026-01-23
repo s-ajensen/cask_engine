@@ -5,6 +5,7 @@
 
 static int init_call_count = 0;
 static int tick_call_count = 0;
+static int shutdown_call_count = 0;
 static float last_alpha = -1.0f;
 
 void test_init(WorldHandle* handle) {
@@ -17,6 +18,10 @@ void test_tick(WorldHandle* handle) {
 
 void test_frame(WorldHandle* handle, float alpha) {
     last_alpha = alpha;
+}
+
+void test_shutdown(WorldHandle* handle) {
+    shutdown_call_count++;
 }
 
 SCENARIO("PluginInfo defines plugin manifest", "[manifest]") {
@@ -60,6 +65,34 @@ SCENARIO("PluginInfo defines plugin manifest", "[manifest]") {
                 REQUIRE(init_call_count == 1);
                 REQUIRE(tick_call_count == 1);
                 REQUIRE(last_alpha == 0.75f);
+            }
+        }
+    }
+}
+
+SCENARIO("PluginInfo supports shutdown callback", "[manifest]") {
+    GIVEN("a plugin info with shutdown function") {
+        PluginInfo info = {
+            .name = "ShutdownTestPlugin",
+            .defines_components = nullptr,
+            .requires_components = nullptr,
+            .defines_count = 0,
+            .requires_count = 0,
+            .init_fn = nullptr,
+            .tick_fn = nullptr,
+            .frame_fn = nullptr,
+            .shutdown_fn = test_shutdown
+        };
+
+        WHEN("calling the shutdown function") {
+            World world;
+            WorldHandle handle{&world};
+            shutdown_call_count = 0;
+
+            info.shutdown_fn(&handle);
+
+            THEN("the shutdown function is invoked") {
+                REQUIRE(shutdown_call_count == 1);
             }
         }
     }

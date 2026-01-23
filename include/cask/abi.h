@@ -12,6 +12,7 @@ typedef struct WorldHandle WorldHandle;
 typedef void (*PluginInitFn)(WorldHandle* handle);
 typedef void (*PluginTickFn)(WorldHandle* handle);
 typedef void (*PluginFrameFn)(WorldHandle* handle, float alpha);
+typedef void (*PluginShutdownFn)(WorldHandle* handle);
 
 typedef struct {
     const char* name;
@@ -22,6 +23,7 @@ typedef struct {
     PluginInitFn init_fn;
     PluginTickFn tick_fn;
     PluginFrameFn frame_fn;
+    PluginShutdownFn shutdown_fn;
 } PluginInfo;
 
 uint32_t world_register_component(WorldHandle* handle, const char* name);
