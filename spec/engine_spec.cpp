@@ -10,18 +10,20 @@ struct FakeClock {
 };
 
 static uint32_t counter_id;
+static int* counter_storage;
 
 World increment_counter(World world) {
-    int* counter = static_cast<int*>(world.get_component(counter_id));
+    int* counter = world.get<int>(counter_id);
     (*counter)++;
     return world;
 }
 
 static uint32_t alpha_capture_id;
+static float* alpha_storage;
 static int frame_call_count;
 
 World capture_alpha(World world, float alpha) {
-    float* captured = static_cast<float*>(world.get_component(alpha_capture_id));
+    float* captured = world.get<float>(alpha_capture_id);
     *captured = alpha;
     frame_call_count++;
     return world;
@@ -32,9 +34,10 @@ SCENARIO("engine executes frame systems once per step with alpha", "[engine]") {
         FakeClock clock;
         Engine engine;
         
-        alpha_capture_id = engine.world().define_component("AlphaCapture", sizeof(float));
-        float* captured = static_cast<float*>(engine.world().get_component(alpha_capture_id));
-        *captured = -1.0f;
+        float alpha_data = -1.0f;
+        alpha_storage = &alpha_data;
+        alpha_capture_id = engine.world().register_component("AlphaCapture");
+        engine.world().bind(alpha_capture_id, alpha_storage);
         frame_call_count = 0;
         
         System frame_system;
@@ -53,8 +56,7 @@ SCENARIO("engine executes frame systems once per step with alpha", "[engine]") {
             }
             
             THEN("frame function receives correct alpha") {
-                float* result = static_cast<float*>(engine.world().get_component(alpha_capture_id));
-                REQUIRE(*result == 0.5f);
+                REQUIRE(*alpha_storage == 0.5f);
             }
         }
     }
@@ -65,9 +67,10 @@ SCENARIO("engine executes tick systems on fixed timestep", "[engine]") {
         FakeClock clock;
         Engine engine;
         
-        counter_id = engine.world().define_component("Counter", sizeof(int));
-        int* counter = static_cast<int*>(engine.world().get_component(counter_id));
-        *counter = 0;
+        int counter_data = 0;
+        counter_storage = &counter_data;
+        counter_id = engine.world().register_component("Counter");
+        engine.world().bind(counter_id, counter_storage);
         
         engine.add_system(System{increment_counter});
         
@@ -79,8 +82,7 @@ SCENARIO("engine executes tick systems on fixed timestep", "[engine]") {
             engine.step(clock, 1.0f);
             
             THEN("the system tick function is called exactly once") {
-                int* result = static_cast<int*>(engine.world().get_component(counter_id));
-                REQUIRE(*result == 1);
+                REQUIRE(*counter_storage == 1);
             }
         }
         
@@ -92,8 +94,7 @@ SCENARIO("engine executes tick systems on fixed timestep", "[engine]") {
             engine.step(clock, 10.0f);
             
             THEN("the system tick function is called multiple times to catch up") {
-                int* result = static_cast<int*>(engine.world().get_component(counter_id));
-                REQUIRE(*result == 3);
+                REQUIRE(*counter_storage == 3);
             }
         }
     }

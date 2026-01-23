@@ -1,24 +1,8 @@
 #pragma once
 
-#include <cstdint>
-#include <cstddef>
+#include "world.hpp"
 #include <optional>
 #include <vector>
-
-class World {
-    std::vector<std::vector<char>> components_;
-
-public:
-    uint32_t define_component(const char* name, size_t size) {
-        uint32_t component_id = static_cast<uint32_t>(components_.size());
-        components_.emplace_back(size, 0);
-        return component_id;
-    }
-
-    void* get_component(uint32_t component_id) {
-        return components_[component_id].data();
-    }
-};
 
 using TickFn = World(*)(World);
 using FrameFn = World(*)(World, float);

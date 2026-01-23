@@ -424,3 +424,4 @@ These emerged from discussions but weren't fully resolved:
 1. Cross-platform abstraction - thin layer for dlopen/LoadLibrary
 2. Hot reload during development - watch directory, reload changed plugins?
 3. Entity lifecycle - pooling, generation counters for validity?
+4. Spiral of death strategy - configurable behavior when ticks can't keep up (slow-motion for scientific sim, skip ticks for multiplayer, etc.)

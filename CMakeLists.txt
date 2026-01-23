@@ -20,6 +20,7 @@ target_include_directories(cask_redux PUBLIC src)
 
 add_executable(cask_redux_tests
     spec/engine_spec.cpp
+    spec/world_spec.cpp
 )
 target_link_libraries(cask_redux_tests PRIVATE cask_redux Catch2::Catch2WithMain)
 
