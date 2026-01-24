@@ -41,7 +41,27 @@ catch_discover_tests(cask_redux_tests)
 add_executable(cask src/main.cpp)
 target_link_libraries(cask PRIVATE cask_redux)
 
-add_library(timing_plugin SHARED spec/plugin/fixtures/timing_plugin.cpp)
-target_include_directories(timing_plugin PRIVATE include src)
-target_link_libraries(timing_plugin PRIVATE cask_redux)
-set_target_properties(timing_plugin PROPERTIES PREFIX "")
+add_library(minimal_plugin SHARED spec/plugin/fixtures/timing_plugin.cpp)
+target_include_directories(minimal_plugin PRIVATE include src)
+target_link_libraries(minimal_plugin PRIVATE cask_redux)
+set_target_properties(minimal_plugin PROPERTIES PREFIX "")
+
+find_package(OpenGL REQUIRED)
+
+FetchContent_Declare(
+    glfw
+    GIT_REPOSITORY https://github.com/glfw/glfw.git
+    GIT_TAG 3.3.8
+)
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(glfw)
+
+add_library(glad STATIC plugins/cubes/glad/src/glad.c)
+target_include_directories(glad PUBLIC plugins/cubes/glad/include)
+
+add_library(cubes_plugin SHARED plugins/cubes/cubes_plugin.cpp)
+target_include_directories(cubes_plugin PRIVATE include src plugins/cubes/glad/include)
+target_link_libraries(cubes_plugin PRIVATE cask_redux glfw glad OpenGL::GL)
+set_target_properties(cubes_plugin PROPERTIES PREFIX "")
