@@ -39,5 +39,6 @@ include(Catch)
 catch_discover_tests(cask_redux_tests)
 
 add_library(minimal_plugin SHARED spec/plugin/fixtures/minimal_plugin.cpp)
-target_include_directories(minimal_plugin PRIVATE include)
+target_include_directories(minimal_plugin PRIVATE include src)
+target_link_libraries(minimal_plugin PRIVATE cask_redux)
 set_target_properties(minimal_plugin PROPERTIES PREFIX "")

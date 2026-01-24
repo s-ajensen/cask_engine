@@ -6,10 +6,10 @@
 SCENARIO("WorldView provides C++ convenience over C ABI", "[plugin]") {
     GIVEN("a world wrapped in a handle") {
         World world;
-        WorldHandle handle{&world};
+        WorldHandle handle = handle_from_world(&world);
         
         WHEN("using WorldView to register and bind") {
-            cask::WorldView view(&handle);
+            cask::WorldView view(handle);
             
             int storage = 0;
             uint32_t id = view.register_component("Counter");
@@ -22,7 +22,7 @@ SCENARIO("WorldView provides C++ convenience over C ABI", "[plugin]") {
         }
         
         WHEN("using WorldView to modify data") {
-            cask::WorldView view(&handle);
+            cask::WorldView view(handle);
             
             int storage = 0;
             uint32_t id = view.register_component("Counter");

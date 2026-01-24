@@ -5,10 +5,10 @@
 namespace cask {
 
 class WorldView {
-    WorldHandle* handle_;
+    WorldHandle handle_;
 
 public:
-    explicit WorldView(WorldHandle* handle) : handle_(handle) {}
+    explicit WorldView(WorldHandle handle) : handle_(handle) {}
 
     uint32_t register_component(const char* name) {
         return world_register_component(handle_, name);

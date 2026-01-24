@@ -8,20 +8,24 @@ static int tick_call_count = 0;
 static int shutdown_call_count = 0;
 static float last_alpha = -1.0f;
 
-void test_init(WorldHandle* handle) {
+WorldHandle test_init(WorldHandle handle) {
     init_call_count++;
+    return handle;
 }
 
-void test_tick(WorldHandle* handle) {
+WorldHandle test_tick(WorldHandle handle) {
     tick_call_count++;
+    return handle;
 }
 
-void test_frame(WorldHandle* handle, float alpha) {
+WorldHandle test_frame(WorldHandle handle, float alpha) {
     last_alpha = alpha;
+    return handle;
 }
 
-void test_shutdown(WorldHandle* handle) {
+WorldHandle test_shutdown(WorldHandle handle) {
     shutdown_call_count++;
+    return handle;
 }
 
 SCENARIO("PluginInfo defines plugin manifest", "[manifest]") {
@@ -51,15 +55,15 @@ SCENARIO("PluginInfo defines plugin manifest", "[manifest]") {
         
         WHEN("calling plugin functions through the manifest") {
             World world;
-            WorldHandle handle{&world};
+            WorldHandle handle = handle_from_world(&world);
             
             init_call_count = 0;
             tick_call_count = 0;
             last_alpha = -1.0f;
             
-            info.init_fn(&handle);
-            info.tick_fn(&handle);
-            info.frame_fn(&handle, 0.75f);
+            info.init_fn(handle);
+            info.tick_fn(handle);
+            info.frame_fn(handle, 0.75f);
             
             THEN("functions are invoked correctly") {
                 REQUIRE(init_call_count == 1);
@@ -86,10 +90,10 @@ SCENARIO("PluginInfo supports shutdown callback", "[manifest]") {
 
         WHEN("calling the shutdown function") {
             World world;
-            WorldHandle handle{&world};
+            WorldHandle handle = handle_from_world(&world);
             shutdown_call_count = 0;
 
-            info.shutdown_fn(&handle);
+            info.shutdown_fn(handle);
 
             THEN("the shutdown function is invoked") {
                 REQUIRE(shutdown_call_count == 1);

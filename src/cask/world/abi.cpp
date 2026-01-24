@@ -2,16 +2,16 @@
 
 extern "C" {
 
-uint32_t world_register_component(WorldHandle* handle, const char* name) {
-    return handle->world->register_component(name);
+uint32_t world_register_component(WorldHandle handle, const char* name) {
+    return world_from_handle(handle)->register_component(name);
 }
 
-void world_bind(WorldHandle* handle, uint32_t component_id, void* data) {
-    handle->world->bind(component_id, data);
+void world_bind(WorldHandle handle, uint32_t component_id, void* data) {
+    world_from_handle(handle)->bind(component_id, data);
 }
 
-void* world_get_component(WorldHandle* handle, uint32_t component_id) {
-    return handle->world->get_component(component_id);
+void* world_get_component(WorldHandle handle, uint32_t component_id) {
+    return world_from_handle(handle)->get_component(component_id);
 }
 
 }

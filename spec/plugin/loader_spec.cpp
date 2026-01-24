@@ -1,6 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include <cask/abi.h>
 #include <cask/plugin/loader.hpp>
+#include <cask/plugin/registry.hpp>
+#include <cask/world/world.hpp>
 #include <string>
 #include <vector>
 
@@ -96,7 +98,7 @@ SCENARIO("loading a real plugin on macOS", "[loader][integration][macos]") {
             THEN("the plugin info is returned") {
                 REQUIRE(result.handle != nullptr);
                 REQUIRE(result.info != nullptr);
-                REQUIRE(std::string(result.info->name) == "MinimalTestPlugin");
+                REQUIRE(std::string(result.info->name) == "CounterPlugin");
             }
             
             macos_unload(result.handle);
@@ -116,7 +118,7 @@ SCENARIO("loading a real plugin on Linux", "[loader][integration][linux]") {
             THEN("the plugin info is returned") {
                 REQUIRE(result.handle != nullptr);
                 REQUIRE(result.info != nullptr);
-                REQUIRE(std::string(result.info->name) == "MinimalTestPlugin");
+                REQUIRE(std::string(result.info->name) == "CounterPlugin");
             }
             
             linux_unload(result.handle);
@@ -136,7 +138,7 @@ SCENARIO("loading a real plugin on Windows", "[loader][integration][windows]") {
             THEN("the plugin info is returned") {
                 REQUIRE(result.handle != nullptr);
                 REQUIRE(result.info != nullptr);
-                REQUIRE(std::string(result.info->name) == "MinimalTestPlugin");
+                REQUIRE(std::string(result.info->name) == "CounterPlugin");
             }
             
             windows_unload(result.handle);
@@ -156,10 +158,12 @@ SCENARIO("native_strategy dispatches to platform loader", "[loader][integration]
             THEN("the plugin info is returned") {
                 REQUIRE(result.handle != nullptr);
                 REQUIRE(result.info != nullptr);
-                REQUIRE(std::string(result.info->name) == "MinimalTestPlugin");
+                REQUIRE(std::string(result.info->name) == "CounterPlugin");
             }
             
             native_unload(result.handle);
         }
     }
 }
+
+
