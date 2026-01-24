@@ -30,7 +30,14 @@ add_executable(cask_redux_tests
     spec/plugin/registry_spec.cpp
 )
 target_link_libraries(cask_redux_tests PRIVATE cask_redux Catch2::Catch2WithMain)
+target_compile_definitions(cask_redux_tests PRIVATE 
+    TEST_PLUGIN_DIR="${CMAKE_BINARY_DIR}"
+)
 
 include(CTest)
 include(Catch)
 catch_discover_tests(cask_redux_tests)
+
+add_library(minimal_plugin SHARED spec/plugin/fixtures/minimal_plugin.cpp)
+target_include_directories(minimal_plugin PRIVATE include)
+set_target_properties(minimal_plugin PROPERTIES PREFIX "")
