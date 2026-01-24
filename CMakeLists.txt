@@ -20,12 +20,14 @@ add_library(cask_redux
 target_include_directories(cask_redux PUBLIC include src)
 
 add_executable(cask_redux_tests
-    spec/engine_spec.cpp
-    spec/world_spec.cpp
-    spec/abi_spec.cpp
-    spec/plugin_spec.cpp
-    spec/manifest_spec.cpp
-    spec/graph_spec.cpp
+    spec/engine/engine_spec.cpp
+    spec/world/world_spec.cpp
+    spec/world/abi_spec.cpp
+    spec/abi/plugin_spec.cpp
+    spec/abi/manifest_spec.cpp
+    spec/deps/graph_spec.cpp
+    spec/plugin/loader_spec.cpp
+    spec/plugin/registry_spec.cpp
 )
 target_link_libraries(cask_redux_tests PRIVATE cask_redux Catch2::Catch2WithMain)
 
