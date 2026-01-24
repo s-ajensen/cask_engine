@@ -98,7 +98,7 @@ SCENARIO("loading a real plugin on macOS", "[loader][integration][macos]") {
             THEN("the plugin info is returned") {
                 REQUIRE(result.handle != nullptr);
                 REQUIRE(result.info != nullptr);
-                REQUIRE(std::string(result.info->name) == "CounterPlugin");
+                REQUIRE(std::string(result.info->name) == "TimingPlugin");
             }
             
             macos_unload(result.handle);
@@ -118,7 +118,7 @@ SCENARIO("loading a real plugin on Linux", "[loader][integration][linux]") {
             THEN("the plugin info is returned") {
                 REQUIRE(result.handle != nullptr);
                 REQUIRE(result.info != nullptr);
-                REQUIRE(std::string(result.info->name) == "CounterPlugin");
+                REQUIRE(std::string(result.info->name) == "TimingPlugin");
             }
             
             linux_unload(result.handle);
@@ -138,7 +138,7 @@ SCENARIO("loading a real plugin on Windows", "[loader][integration][windows]") {
             THEN("the plugin info is returned") {
                 REQUIRE(result.handle != nullptr);
                 REQUIRE(result.info != nullptr);
-                REQUIRE(std::string(result.info->name) == "CounterPlugin");
+                REQUIRE(std::string(result.info->name) == "TimingPlugin");
             }
             
             windows_unload(result.handle);
@@ -158,7 +158,7 @@ SCENARIO("native_strategy dispatches to platform loader", "[loader][integration]
             THEN("the plugin info is returned") {
                 REQUIRE(result.handle != nullptr);
                 REQUIRE(result.info != nullptr);
-                REQUIRE(std::string(result.info->name) == "CounterPlugin");
+                REQUIRE(std::string(result.info->name) == "TimingPlugin");
             }
             
             native_unload(result.handle);

@@ -1,4 +1,4 @@
-.PHONY: build test test-watch clean
+.PHONY: build test test-watch run clean
 
 build:
 	@cmake --build build
@@ -8,6 +8,9 @@ test: build
 
 test-watch:
 	@find src spec -name '*.cpp' -o -name '*.hpp' | entr -c make test
+
+run: build
+	@./build/cask ./build/minimal_plugin.dylib
 
 clean:
 	@rm -rf build

@@ -32,4 +32,8 @@ public:
             }
         }
     }
+
+    const std::vector<PluginInfo*>& plugins() const {
+        return init_order_;
+    }
 };
