@@ -15,6 +15,7 @@ make test          # build and run specs
 make test-watch    # re-run on file changes (requires entr)
 make build         # build only
 make clean         # remove build directory
+./build/cask ./build/cubes_plugin.dylib # with cubes
 ```
 
 ## Dependencies
