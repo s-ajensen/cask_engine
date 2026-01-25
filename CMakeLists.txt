@@ -18,6 +18,7 @@ add_library(cask_redux
     src/cask/world/abi.cpp
 )
 target_include_directories(cask_redux PUBLIC include src)
+set_target_properties(cask_redux PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 add_executable(cask_redux_tests
     spec/engine/engine_spec.cpp
@@ -60,6 +61,7 @@ FetchContent_MakeAvailable(glfw)
 
 add_library(glad STATIC plugins/cubes/glad/src/glad.c)
 target_include_directories(glad PUBLIC plugins/cubes/glad/include)
+set_target_properties(glad PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 add_library(cubes_plugin SHARED plugins/cubes/cubes_plugin.cpp)
 target_include_directories(cubes_plugin PRIVATE include src plugins/cubes/glad/include)
