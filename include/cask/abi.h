@@ -11,10 +11,10 @@ typedef struct {
     void* world;
 } WorldHandle;
 
-typedef WorldHandle (*PluginInitFn)(WorldHandle handle);
-typedef WorldHandle (*PluginTickFn)(WorldHandle handle);
-typedef WorldHandle (*PluginFrameFn)(WorldHandle handle, float alpha);
-typedef WorldHandle (*PluginShutdownFn)(WorldHandle handle);
+typedef void (*PluginInitFn)(WorldHandle handle);
+typedef void (*PluginTickFn)(WorldHandle handle);
+typedef void (*PluginFrameFn)(WorldHandle handle, float alpha);
+typedef void (*PluginShutdownFn)(WorldHandle handle);
 
 typedef struct {
     const char* name;

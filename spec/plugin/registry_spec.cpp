@@ -8,11 +8,11 @@
 static std::vector<std::string>* init_tracker = nullptr;
 static std::vector<std::string>* shutdown_tracker = nullptr;
 
-WorldHandle track_plugin_a(WorldHandle handle) { init_tracker->push_back("PluginA"); return handle; }
-WorldHandle track_plugin_b(WorldHandle handle) { init_tracker->push_back("PluginB"); return handle; }
+void track_plugin_a(WorldHandle handle) { init_tracker->push_back("PluginA"); }
+void track_plugin_b(WorldHandle handle) { init_tracker->push_back("PluginB"); }
 
-WorldHandle shutdown_plugin_a(WorldHandle handle) { shutdown_tracker->push_back("PluginA"); return handle; }
-WorldHandle shutdown_plugin_b(WorldHandle handle) { shutdown_tracker->push_back("PluginB"); return handle; }
+void shutdown_plugin_a(WorldHandle handle) { shutdown_tracker->push_back("PluginA"); }
+void shutdown_plugin_b(WorldHandle handle) { shutdown_tracker->push_back("PluginB"); }
 
 SCENARIO("plugin registry initializes plugins in dependency order", "[registry]") {
     GIVEN("plugins with dependencies added in wrong order") {

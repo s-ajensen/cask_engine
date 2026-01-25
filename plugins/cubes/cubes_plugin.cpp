@@ -274,7 +274,7 @@ static void mat4_multiply(float* result, const float* a, const float* b) {
     }
 }
 
-WorldHandle plugin_init(WorldHandle handle) {
+void plugin_init(WorldHandle handle) {
     cask::WorldView world(handle);
 
     cubes_id = world.register_component("CubeState");
@@ -287,10 +287,9 @@ WorldHandle plugin_init(WorldHandle handle) {
     init_render();
 
     std::printf("Cubes plugin initialized: %zu cubes\n", CUBE_COUNT);
-    return handle;
 }
 
-WorldHandle plugin_tick(WorldHandle handle) {
+void plugin_tick(WorldHandle handle) {
     cask::WorldView world(handle);
     CubeState* state = world.get<CubeState>(cubes_id);
 
@@ -302,11 +301,9 @@ WorldHandle plugin_tick(WorldHandle handle) {
         state->pos_y[index] = state->base_y[index] +
             state->amplitude[index] * std::sin(state->phase[index] + time * state->frequency[index]);
     }
-
-    return handle;
 }
 
-WorldHandle plugin_frame(WorldHandle handle, float alpha) {
+void plugin_frame(WorldHandle handle, float alpha) {
     cask::WorldView world(handle);
     CubeState* state = world.get<CubeState>(cubes_id);
     RenderState* rs = world.get<RenderState>(render_id);
@@ -355,11 +352,9 @@ WorldHandle plugin_frame(WorldHandle handle, float alpha) {
     glDrawArraysInstanced(GL_TRIANGLES, 0, 36, static_cast<GLsizei>(state->count));
 
     glfwSwapBuffers(rs->window);
-
-    return handle;
 }
 
-WorldHandle plugin_shutdown(WorldHandle handle) {
+void plugin_shutdown(WorldHandle handle) {
     glDeleteVertexArrays(1, &render.vao);
     glDeleteBuffers(1, &render.cube_vbo);
     glDeleteBuffers(1, &render.instance_vbo);
@@ -380,7 +375,6 @@ WorldHandle plugin_shutdown(WorldHandle handle) {
     delete[] cubes.color_b;
 
     std::printf("Cubes plugin shutdown\n");
-    return handle;
 }
 
 static const char* defines[] = {"CubeState", "RenderState"};

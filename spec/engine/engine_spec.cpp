@@ -13,21 +13,19 @@ struct FakeClock {
 static uint32_t counter_id;
 static int* counter_storage;
 
-WorldHandle increment_counter(WorldHandle handle) {
+void increment_counter(WorldHandle handle) {
     int* counter = static_cast<int*>(world_get_component(handle, counter_id));
     (*counter)++;
-    return handle;
 }
 
 static uint32_t alpha_capture_id;
 static float* alpha_storage;
 static int frame_call_count;
 
-WorldHandle capture_alpha(WorldHandle handle, float alpha) {
+void capture_alpha(WorldHandle handle, float alpha) {
     float* captured = static_cast<float*>(world_get_component(handle, alpha_capture_id));
     *captured = alpha;
     frame_call_count++;
-    return handle;
 }
 
 SCENARIO("engine executes frame systems once per step with alpha", "[engine]") {
@@ -66,10 +64,9 @@ SCENARIO("engine executes frame systems once per step with alpha", "[engine]") {
 static uint32_t plugin_counter_id;
 static int* plugin_counter_storage;
 
-WorldHandle increment_counter_plugin(WorldHandle handle) {
+void increment_counter_plugin(WorldHandle handle) {
     int* counter = static_cast<int*>(world_get_component(handle, plugin_counter_id));
     (*counter)++;
-    return handle;
 }
 
 SCENARIO("engine runs plugin-style systems", "[engine]") {

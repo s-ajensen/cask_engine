@@ -8,24 +8,20 @@ static int tick_call_count = 0;
 static int shutdown_call_count = 0;
 static float last_alpha = -1.0f;
 
-WorldHandle test_init(WorldHandle handle) {
+void test_init(WorldHandle handle) {
     init_call_count++;
-    return handle;
 }
 
-WorldHandle test_tick(WorldHandle handle) {
+void test_tick(WorldHandle handle) {
     tick_call_count++;
-    return handle;
 }
 
-WorldHandle test_frame(WorldHandle handle, float alpha) {
+void test_frame(WorldHandle handle, float alpha) {
     last_alpha = alpha;
-    return handle;
 }
 
-WorldHandle test_shutdown(WorldHandle handle) {
+void test_shutdown(WorldHandle handle) {
     shutdown_call_count++;
-    return handle;
 }
 
 SCENARIO("PluginInfo defines plugin manifest", "[manifest]") {

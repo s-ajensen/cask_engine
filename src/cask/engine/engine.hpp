@@ -5,19 +5,19 @@
 #include <optional>
 #include <vector>
 
-using TickFn = WorldHandle(*)(WorldHandle);
-using FrameFn = WorldHandle(*)(WorldHandle, float);
+using TickFn = void(*)(WorldHandle);
+using FrameFn = void(*)(WorldHandle, float);
 
 struct System {
     TickFn tick_fn = nullptr;
     FrameFn frame_fn = nullptr;
 
-    WorldHandle tick(WorldHandle handle) {
-        return tick_fn(handle);
+    void tick(WorldHandle handle) {
+        tick_fn(handle);
     }
 
-    WorldHandle frame(WorldHandle handle, float alpha) {
-        return frame_fn(handle, alpha);
+    void frame(WorldHandle handle, float alpha) {
+        frame_fn(handle, alpha);
     }
 };
 
@@ -45,7 +45,7 @@ public:
             start_time_ = current_time;
             for (auto& system : systems_) {
                 if (system.frame_fn) {
-                    handle = system.frame(handle, 0.0f);
+                    system.frame(handle, 0.0f);
                 }
             }
             return;
@@ -58,7 +58,7 @@ public:
         while (tick_count_ < target_tick_count) {
             for (auto& system : systems_) {
                 if (system.tick_fn) {
-                    handle = system.tick(handle);
+                    system.tick(handle);
                 }
             }
             tick_count_++;
@@ -67,7 +67,7 @@ public:
         float alpha = fractional_ticks - target_tick_count;
         for (auto& system : systems_) {
             if (system.frame_fn) {
-                handle = system.frame(handle, alpha);
+                system.frame(handle, alpha);
             }
         }
     }
