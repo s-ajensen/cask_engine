@@ -30,19 +30,14 @@ struct CubeState {
 
     size_t count;
     int tick;
-
-    GLuint compute_program;
-    GLuint static_ssbo;
-    GLuint position_ssbo;
-    GLint time_loc;
 };
 
 struct RenderState {
     GLFWwindow* window;
-    GLuint render_program;
+    GLuint shader_program;
     GLuint vao;
     GLuint cube_vbo;
-    GLuint color_ssbo;
+    GLuint instance_vbo;
     GLint mvp_loc;
 };
 
@@ -59,52 +54,11 @@ static float randf_range(float min_val, float max_val) {
     return min_val + randf() * (max_val - min_val);
 }
 
-static const char* compute_shader_src = R"(
-#version 430 core
-layout(local_size_x = 256) in;
-
-layout(std430, binding = 0) readonly buffer StaticData {
-    float static_data[];
-};
-
-layout(std430, binding = 1) writeonly buffer Positions {
-    float positions[];
-};
-
-uniform float u_time;
-
-void main() {
-    uint index = gl_GlobalInvocationID.x;
-    uint in_offset = index * 6;
-    uint out_offset = index * 4;
-    
-    float pos_x = static_data[in_offset + 0];
-    float pos_z = static_data[in_offset + 1];
-    float base_y = static_data[in_offset + 2];
-    float amplitude = static_data[in_offset + 3];
-    float frequency = static_data[in_offset + 4];
-    float phase = static_data[in_offset + 5];
-    
-    float y = base_y + amplitude * sin(phase + u_time * frequency);
-    
-    positions[out_offset + 0] = pos_x;
-    positions[out_offset + 1] = y;
-    positions[out_offset + 2] = pos_z;
-    positions[out_offset + 3] = 0.0;
-}
-)";
-
 static const char* vertex_shader_src = R"(
-#version 430 core
+#version 330 core
 layout (location = 0) in vec3 a_pos;
-
-layout(std430, binding = 1) readonly buffer Positions {
-    vec4 positions[];
-};
-
-layout(std430, binding = 2) readonly buffer Colors {
-    vec4 colors[];
-};
+layout (location = 1) in vec3 a_instance_pos;
+layout (location = 2) in vec3 a_instance_color;
 
 uniform mat4 u_mvp;
 
@@ -112,12 +66,9 @@ out vec3 v_color;
 out vec3 v_normal;
 
 void main() {
-    vec3 instance_pos = positions[gl_InstanceID].xyz;
-    vec3 instance_color = colors[gl_InstanceID].xyz;
-    
-    vec3 world_pos = a_pos * 0.3 + instance_pos;
+    vec3 world_pos = a_pos * 0.3 + a_instance_pos;
     gl_Position = u_mvp * vec4(world_pos, 1.0);
-    v_color = instance_color;
+    v_color = a_instance_color;
     v_normal = a_pos;
 }
 )";
@@ -217,27 +168,9 @@ static void init_cubes() {
     }
 }
 
-static GLuint create_compute_program() {
-    GLuint shader = compile_shader(GL_COMPUTE_SHADER, compute_shader_src);
-    GLuint program = glCreateProgram();
-    glAttachShader(program, shader);
-    glLinkProgram(program);
-
-    GLint success;
-    glGetProgramiv(program, GL_LINK_STATUS, &success);
-    if (!success) {
-        char log[512];
-        glGetProgramInfoLog(program, 512, nullptr, log);
-        std::printf("Compute shader link error: %s\n", log);
-    }
-
-    glDeleteShader(shader);
-    return program;
-}
-
-static void init_gl_context() {
+static void init_render() {
     glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
@@ -251,38 +184,9 @@ static void init_gl_context() {
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glClearColor(0.1f, 0.1f, 0.15f, 1.0f);
-}
 
-static void init_simulation() {
-    cubes.compute_program = create_compute_program();
-    cubes.time_loc = glGetUniformLocation(cubes.compute_program, "u_time");
-
-    constexpr size_t STATIC_FLOATS = 6;
-    float* static_data = new float[CUBE_COUNT * STATIC_FLOATS];
-    for (size_t index = 0; index < CUBE_COUNT; index++) {
-        size_t offset = index * STATIC_FLOATS;
-        static_data[offset + 0] = cubes.pos_x[index];
-        static_data[offset + 1] = cubes.pos_z[index];
-        static_data[offset + 2] = cubes.base_y[index];
-        static_data[offset + 3] = cubes.amplitude[index];
-        static_data[offset + 4] = cubes.frequency[index];
-        static_data[offset + 5] = cubes.phase[index];
-    }
-    glGenBuffers(1, &cubes.static_ssbo);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, cubes.static_ssbo);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, CUBE_COUNT * STATIC_FLOATS * sizeof(float), static_data, GL_STATIC_DRAW);
-    delete[] static_data;
-
-    glGenBuffers(1, &cubes.position_ssbo);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, cubes.position_ssbo);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, CUBE_COUNT * 4 * sizeof(float), nullptr, GL_DYNAMIC_DRAW);
-
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-}
-
-static void init_render() {
-    render.render_program = create_shader_program();
-    render.mvp_loc = glGetUniformLocation(render.render_program, "u_mvp");
+    render.shader_program = create_shader_program();
+    render.mvp_loc = glGetUniformLocation(render.shader_program, "u_mvp");
 
     float cube_verts[] = {
         -0.5f, -0.5f, -0.5f,  0.5f, -0.5f, -0.5f,  0.5f,  0.5f, -0.5f,
@@ -307,23 +211,20 @@ static void init_render() {
     glBufferData(GL_ARRAY_BUFFER, sizeof(cube_verts), cube_verts, GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
     glEnableVertexAttribArray(0);
+
+    glGenBuffers(1, &render.instance_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, render.instance_vbo);
+    glBufferData(GL_ARRAY_BUFFER, CUBE_COUNT * 6 * sizeof(float), nullptr, GL_DYNAMIC_DRAW);
+
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), nullptr);
+    glEnableVertexAttribArray(1);
+    glVertexAttribDivisor(1, 1);
+
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(2);
+    glVertexAttribDivisor(2, 1);
+
     glBindVertexArray(0);
-
-    constexpr size_t COLOR_FLOATS = 4;
-    float* color_data = new float[CUBE_COUNT * COLOR_FLOATS];
-    for (size_t index = 0; index < CUBE_COUNT; index++) {
-        size_t offset = index * COLOR_FLOATS;
-        color_data[offset + 0] = cubes.color_r[index];
-        color_data[offset + 1] = cubes.color_g[index];
-        color_data[offset + 2] = cubes.color_b[index];
-        color_data[offset + 3] = 1.0f;
-    }
-    glGenBuffers(1, &render.color_ssbo);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, render.color_ssbo);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, CUBE_COUNT * COLOR_FLOATS * sizeof(float), color_data, GL_STATIC_DRAW);
-    delete[] color_data;
-
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }
 
 static void make_perspective(float* matrix, float fov, float aspect, float near_plane, float far_plane) {
@@ -383,8 +284,6 @@ WorldHandle plugin_init(WorldHandle handle) {
 
     srand(42);
     init_cubes();
-    init_gl_context();
-    init_simulation();
     init_render();
 
     std::printf("Cubes plugin initialized: %zu cubes\n", CUBE_COUNT);
@@ -398,17 +297,11 @@ WorldHandle plugin_tick(WorldHandle handle) {
     state->tick++;
     float time = static_cast<float>(state->tick) / TICK_RATE;
 
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, state->static_ssbo);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, state->position_ssbo);
-
-    glUseProgram(state->compute_program);
-    glUniform1f(state->time_loc, time);
-
-    constexpr GLuint WORKGROUP_SIZE = 256;
-    GLuint num_groups = (CUBE_COUNT + WORKGROUP_SIZE - 1) / WORKGROUP_SIZE;
-    glDispatchCompute(num_groups, 1, 1);
-
-    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    for (size_t index = 0; index < state->count; index++) {
+        state->prev_y[index] = state->pos_y[index];
+        state->pos_y[index] = state->base_y[index] +
+            state->amplitude[index] * std::sin(state->phase[index] + time * state->frequency[index]);
+    }
 
     return handle;
 }
@@ -429,6 +322,21 @@ WorldHandle plugin_frame(WorldHandle handle, float alpha) {
     glViewport(0, 0, width, height);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    float* instance_data = new float[state->count * 6];
+    for (size_t index = 0; index < state->count; index++) {
+        float interp_y = state->prev_y[index] + alpha * (state->pos_y[index] - state->prev_y[index]);
+        instance_data[index * 6 + 0] = state->pos_x[index];
+        instance_data[index * 6 + 1] = interp_y;
+        instance_data[index * 6 + 2] = state->pos_z[index];
+        instance_data[index * 6 + 3] = state->color_r[index];
+        instance_data[index * 6 + 4] = state->color_g[index];
+        instance_data[index * 6 + 5] = state->color_b[index];
+    }
+
+    glBindBuffer(GL_ARRAY_BUFFER, rs->instance_vbo);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, state->count * 6 * sizeof(float), instance_data);
+    delete[] instance_data;
+
     float time = static_cast<float>(state->tick + alpha) / TICK_RATE;
     float cam_dist = 200.0f;
     float cam_x = std::sin(time * 0.3f) * cam_dist;
@@ -440,10 +348,7 @@ WorldHandle plugin_frame(WorldHandle handle, float alpha) {
     make_look_at(view, cam_x, cam_y, cam_z, 0, 0, 0);
     mat4_multiply(mvp, proj, view);
 
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, state->position_ssbo);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, rs->color_ssbo);
-
-    glUseProgram(rs->render_program);
+    glUseProgram(rs->shader_program);
     glUniformMatrix4fv(rs->mvp_loc, 1, GL_FALSE, mvp);
 
     glBindVertexArray(rs->vao);
@@ -455,14 +360,10 @@ WorldHandle plugin_frame(WorldHandle handle, float alpha) {
 }
 
 WorldHandle plugin_shutdown(WorldHandle handle) {
-    glDeleteBuffers(1, &cubes.static_ssbo);
-    glDeleteBuffers(1, &cubes.position_ssbo);
-    glDeleteProgram(cubes.compute_program);
-
     glDeleteVertexArrays(1, &render.vao);
     glDeleteBuffers(1, &render.cube_vbo);
-    glDeleteBuffers(1, &render.color_ssbo);
-    glDeleteProgram(render.render_program);
+    glDeleteBuffers(1, &render.instance_vbo);
+    glDeleteProgram(render.shader_program);
     glfwDestroyWindow(render.window);
     glfwTerminate();
 
