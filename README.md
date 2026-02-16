@@ -1,4 +1,4 @@
-# Cask Redux
+# Cask Engine
 
 Game engine with fixed-timestep loop and pure functional system transforms.
 

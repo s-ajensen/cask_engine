@@ -4,7 +4,7 @@ build:
 	@cmake --build build
 
 test: build
-	@./build/cask_redux_tests
+	@./build/cask_engine_tests
 
 test-watch:
 	@find src spec -name '*.cpp' -o -name '*.hpp' | entr -c make test
