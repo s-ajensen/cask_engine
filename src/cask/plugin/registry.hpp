@@ -27,8 +27,12 @@ public:
     void shutdown(World& world) {
         WorldHandle handle = handle_from_world(&world);
         for (auto iter = init_order_.rbegin(); iter != init_order_.rend(); ++iter) {
-            if ((*iter)->shutdown_fn) {
-                (*iter)->shutdown_fn(handle);
+            PluginInfo* plugin = *iter;
+            if (plugin->shutdown_fn) {
+                plugin->shutdown_fn(handle);
+            }
+            for (size_t index = 0; index < plugin->defines_count; ++index) {
+                world.destroy(plugin->defines_components[index]);
             }
         }
     }

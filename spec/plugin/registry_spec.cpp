@@ -14,6 +14,25 @@ void track_plugin_b(WorldHandle handle) { init_tracker->push_back("PluginB"); }
 void shutdown_plugin_a(WorldHandle handle) { shutdown_tracker->push_back("PluginA"); }
 void shutdown_plugin_b(WorldHandle handle) { shutdown_tracker->push_back("PluginB"); }
 
+static bool* deleter_called_flag = nullptr;
+
+void delete_and_flag(void* data) {
+    *deleter_called_flag = true;
+    delete static_cast<int*>(data);
+}
+
+void init_with_component(WorldHandle handle) {
+    int* value = new int(42);
+    world_register_and_bind(handle, "ComponentA", value, delete_and_flag);
+}
+
+static bool* component_alive_during_shutdown = nullptr;
+
+void shutdown_and_read_component(WorldHandle handle) {
+    void* resolved = world_resolve_component(handle, "ComponentA");
+    *component_alive_during_shutdown = (resolved != nullptr);
+}
+
 SCENARIO("plugin registry initializes plugins in dependency order", "[registry]") {
     GIVEN("plugins with dependencies added in wrong order") {
         std::vector<std::string> init_order;
@@ -109,6 +128,75 @@ SCENARIO("plugin registry shuts down in reverse order", "[registry]") {
                 REQUIRE(shutdown_order.size() == 2);
                 REQUIRE(shutdown_order[0] == "PluginB");
                 REQUIRE(shutdown_order[1] == "PluginA");
+            }
+        }
+    }
+}
+
+SCENARIO("plugin registry destroys defined components on shutdown", "[registry]") {
+    GIVEN("a plugin that defines a component with a deleter") {
+        bool deleter_was_called = false;
+        deleter_called_flag = &deleter_was_called;
+
+        static const char* defines[] = {"ComponentA"};
+        PluginInfo provider = {
+            .name = "Provider",
+            .defines_components = defines,
+            .requires_components = nullptr,
+            .defines_count = 1,
+            .requires_count = 0,
+            .init_fn = init_with_component,
+            .tick_fn = nullptr,
+            .frame_fn = nullptr,
+            .shutdown_fn = nullptr
+        };
+
+        PluginRegistry registry;
+        World world;
+
+        registry.add(&provider);
+        registry.initialize(world);
+
+        WHEN("the registry shuts down") {
+            registry.shutdown(world);
+
+            THEN("the component deleter is called") {
+                REQUIRE(deleter_was_called);
+            }
+        }
+    }
+
+    GIVEN("a plugin whose shutdown_fn reads its own component") {
+        bool deleter_was_called = false;
+        deleter_called_flag = &deleter_was_called;
+        bool was_alive_during_shutdown = false;
+        component_alive_during_shutdown = &was_alive_during_shutdown;
+
+        static const char* defines[] = {"ComponentA"};
+        PluginInfo provider = {
+            .name = "Provider",
+            .defines_components = defines,
+            .requires_components = nullptr,
+            .defines_count = 1,
+            .requires_count = 0,
+            .init_fn = init_with_component,
+            .tick_fn = nullptr,
+            .frame_fn = nullptr,
+            .shutdown_fn = shutdown_and_read_component
+        };
+
+        PluginRegistry registry;
+        World world;
+
+        registry.add(&provider);
+        registry.initialize(world);
+
+        WHEN("the registry shuts down") {
+            registry.shutdown(world);
+
+            THEN("the shutdown_fn sees the component alive and the deleter runs afterward") {
+                REQUIRE(was_alive_during_shutdown);
+                REQUIRE(deleter_was_called);
             }
         }
     }

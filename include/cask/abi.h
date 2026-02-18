@@ -28,9 +28,13 @@ typedef struct {
     PluginShutdownFn shutdown_fn;
 } PluginInfo;
 
+typedef void (*ComponentDeleter)(void*);
+
 uint32_t world_register_component(WorldHandle handle, const char* name);
 void world_bind(WorldHandle handle, uint32_t component_id, void* data);
 void* world_get_component(WorldHandle handle, uint32_t component_id);
+void* world_resolve_component(WorldHandle handle, const char* name);
+void world_register_and_bind(WorldHandle handle, const char* name, void* data, ComponentDeleter deleter);
 
 #ifdef __cplusplus
 }

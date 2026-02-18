@@ -14,4 +14,12 @@ void* world_get_component(WorldHandle handle, uint32_t component_id) {
     return world_from_handle(handle)->get_component(component_id);
 }
 
+void* world_resolve_component(WorldHandle handle, const char* name) {
+    return world_from_handle(handle)->resolve(name);
+}
+
+void world_register_and_bind(WorldHandle handle, const char* name, void* data, ComponentDeleter deleter) {
+    world_from_handle(handle)->register_and_bind(name, data, deleter);
+}
+
 }
