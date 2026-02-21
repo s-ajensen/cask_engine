@@ -33,36 +33,52 @@ void shutdown_and_read_component(WorldHandle handle) {
     *component_alive_during_shutdown = (resolved != nullptr);
 }
 
+static bool* component_accessible_flag = nullptr;
+
+void init_and_resolve_component(WorldHandle handle) {
+    init_tracker->push_back("PluginB");
+    void* resolved = world_resolve_component(handle, "ComponentA");
+    *component_accessible_flag = (resolved != nullptr);
+}
+
+PluginInfo make_plugin(const char* name, PluginInitFn init_fn) {
+    return {
+        .name = name,
+        .defines_components = nullptr,
+        .requires_components = nullptr,
+        .defines_count = 0,
+        .requires_count = 0,
+        .init_fn = init_fn,
+        .tick_fn = nullptr,
+        .frame_fn = nullptr,
+        .shutdown_fn = nullptr
+    };
+}
+
+PluginInfo make_defining_plugin(const char* name, PluginInitFn init_fn, const char** defines, size_t defines_count) {
+    PluginInfo plugin = make_plugin(name, init_fn);
+    plugin.defines_components = defines;
+    plugin.defines_count = defines_count;
+    return plugin;
+}
+
+PluginInfo make_requiring_plugin(const char* name, PluginInitFn init_fn, const char** deps, size_t deps_count) {
+    PluginInfo plugin = make_plugin(name, init_fn);
+    plugin.requires_components = deps;
+    plugin.requires_count = deps_count;
+    return plugin;
+}
+
 SCENARIO("plugin registry initializes plugins in dependency order", "[registry]") {
     GIVEN("plugins with dependencies added in wrong order") {
         std::vector<std::string> init_order;
         init_tracker = &init_order;
 
         static const char* plugin_a_defines[] = {"ComponentA"};
-        PluginInfo plugin_a = {
-            .name = "PluginA",
-            .defines_components = plugin_a_defines,
-            .requires_components = nullptr,
-            .defines_count = 1,
-            .requires_count = 0,
-            .init_fn = track_plugin_a,
-            .tick_fn = nullptr,
-            .frame_fn = nullptr,
-            .shutdown_fn = nullptr
-        };
+        PluginInfo plugin_a = make_defining_plugin("PluginA", track_plugin_a, plugin_a_defines, 1);
 
         static const char* plugin_b_requires[] = {"ComponentA"};
-        PluginInfo plugin_b = {
-            .name = "PluginB",
-            .defines_components = nullptr,
-            .requires_components = plugin_b_requires,
-            .defines_count = 0,
-            .requires_count = 1,
-            .init_fn = track_plugin_b,
-            .tick_fn = nullptr,
-            .frame_fn = nullptr,
-            .shutdown_fn = nullptr
-        };
+        PluginInfo plugin_b = make_requiring_plugin("PluginB", track_plugin_b, plugin_b_requires, 1);
 
         WHEN("initializing with the consumer listed before the provider") {
             PluginRegistry registry;
@@ -89,30 +105,12 @@ SCENARIO("plugin registry shuts down in reverse order", "[registry]") {
         shutdown_tracker = &shutdown_order;
 
         static const char* plugin_a_defines[] = {"ComponentA"};
-        PluginInfo plugin_a = {
-            .name = "PluginA",
-            .defines_components = plugin_a_defines,
-            .requires_components = nullptr,
-            .defines_count = 1,
-            .requires_count = 0,
-            .init_fn = track_plugin_a,
-            .tick_fn = nullptr,
-            .frame_fn = nullptr,
-            .shutdown_fn = shutdown_plugin_a
-        };
+        PluginInfo plugin_a = make_defining_plugin("PluginA", track_plugin_a, plugin_a_defines, 1);
+        plugin_a.shutdown_fn = shutdown_plugin_a;
 
         static const char* plugin_b_requires[] = {"ComponentA"};
-        PluginInfo plugin_b = {
-            .name = "PluginB",
-            .defines_components = nullptr,
-            .requires_components = plugin_b_requires,
-            .defines_count = 0,
-            .requires_count = 1,
-            .init_fn = track_plugin_b,
-            .tick_fn = nullptr,
-            .frame_fn = nullptr,
-            .shutdown_fn = shutdown_plugin_b
-        };
+        PluginInfo plugin_b = make_requiring_plugin("PluginB", track_plugin_b, plugin_b_requires, 1);
+        plugin_b.shutdown_fn = shutdown_plugin_b;
 
         PluginRegistry registry;
         World world;
@@ -139,17 +137,7 @@ SCENARIO("plugin registry destroys defined components on shutdown", "[registry]"
         deleter_called_flag = &deleter_was_called;
 
         static const char* defines[] = {"ComponentA"};
-        PluginInfo provider = {
-            .name = "Provider",
-            .defines_components = defines,
-            .requires_components = nullptr,
-            .defines_count = 1,
-            .requires_count = 0,
-            .init_fn = init_with_component,
-            .tick_fn = nullptr,
-            .frame_fn = nullptr,
-            .shutdown_fn = nullptr
-        };
+        PluginInfo provider = make_defining_plugin("Provider", init_with_component, defines, 1);
 
         PluginRegistry registry;
         World world;
@@ -173,17 +161,8 @@ SCENARIO("plugin registry destroys defined components on shutdown", "[registry]"
         component_alive_during_shutdown = &was_alive_during_shutdown;
 
         static const char* defines[] = {"ComponentA"};
-        PluginInfo provider = {
-            .name = "Provider",
-            .defines_components = defines,
-            .requires_components = nullptr,
-            .defines_count = 1,
-            .requires_count = 0,
-            .init_fn = init_with_component,
-            .tick_fn = nullptr,
-            .frame_fn = nullptr,
-            .shutdown_fn = shutdown_and_read_component
-        };
+        PluginInfo provider = make_defining_plugin("Provider", init_with_component, defines, 1);
+        provider.shutdown_fn = shutdown_and_read_component;
 
         PluginRegistry registry;
         World world;
@@ -197,6 +176,130 @@ SCENARIO("plugin registry destroys defined components on shutdown", "[registry]"
             THEN("the shutdown_fn sees the component alive and the deleter runs afterward") {
                 REQUIRE(was_alive_during_shutdown);
                 REQUIRE(deleter_was_called);
+            }
+        }
+    }
+}
+
+SCENARIO("plugin registry ignores duplicate adds", "[registry]") {
+    GIVEN("a plugin added to the registry twice") {
+        std::vector<std::string> init_order;
+        init_tracker = &init_order;
+
+        PluginInfo plugin_a = make_plugin("PluginA", track_plugin_a);
+
+        PluginRegistry registry;
+        World world;
+
+        registry.add(&plugin_a);
+        registry.add(&plugin_a);
+
+        WHEN("initializing the registry") {
+            registry.initialize(world);
+
+            THEN("the plugin init_fn is called exactly once") {
+                REQUIRE(init_order.size() == 1);
+                REQUIRE(init_order[0] == "PluginA");
+            }
+        }
+    }
+}
+
+SCENARIO("plugin registry respects dependencies across incremental loads", "[registry]") {
+    GIVEN("a plugin that defines a component already initialized") {
+        std::vector<std::string> tracked_inits;
+        init_tracker = &tracked_inits;
+        bool deleter_was_called = false;
+        deleter_called_flag = &deleter_was_called;
+        bool component_was_accessible = false;
+        component_accessible_flag = &component_was_accessible;
+
+        static const char* plugin_a_defines[] = {"ComponentA"};
+        PluginInfo plugin_a = make_defining_plugin("PluginA", init_with_component, plugin_a_defines, 1);
+
+        PluginRegistry registry;
+        World world;
+
+        registry.add(&plugin_a);
+        registry.initialize(world);
+
+        WHEN("a dependent plugin is added and initialized incrementally") {
+            static const char* plugin_b_requires[] = {"ComponentA"};
+            PluginInfo plugin_b = make_requiring_plugin("PluginB", init_and_resolve_component, plugin_b_requires, 1);
+
+            registry.add(&plugin_b);
+            registry.initialize(world);
+
+            THEN("the new plugin can access the previously initialized component") {
+                REQUIRE(component_was_accessible);
+            }
+        }
+    }
+}
+
+SCENARIO("plugin registry re-initialize only inits new plugins", "[registry]") {
+    GIVEN("a registry with one initialized plugin") {
+        std::vector<std::string> tracked_inits;
+        init_tracker = &tracked_inits;
+
+        PluginInfo plugin_a = make_plugin("PluginA", track_plugin_a);
+
+        PluginRegistry registry;
+        World world;
+
+        registry.add(&plugin_a);
+        registry.initialize(world);
+
+        REQUIRE(tracked_inits.size() == 1);
+        REQUIRE(tracked_inits[0] == "PluginA");
+
+        tracked_inits.clear();
+
+        WHEN("a new plugin is added and initialize is called again") {
+            PluginInfo plugin_b = make_plugin("PluginB", track_plugin_b);
+
+            registry.add(&plugin_b);
+            registry.initialize(world);
+
+            THEN("only the new plugin is initialized") {
+                REQUIRE(tracked_inits.size() == 1);
+                REQUIRE(tracked_inits[0] == "PluginB");
+            }
+        }
+    }
+}
+
+SCENARIO("plugin registry initialize returns newly initialized plugins", "[registry]") {
+    GIVEN("two standalone plugins added incrementally") {
+        std::vector<std::string> tracked_inits;
+        init_tracker = &tracked_inits;
+
+        PluginInfo plugin_a = make_plugin("PluginA", track_plugin_a);
+        PluginInfo plugin_b = make_plugin("PluginB", track_plugin_b);
+
+        PluginRegistry registry;
+        World world;
+
+        WHEN("the first plugin is added and initialized") {
+            registry.add(&plugin_a);
+            auto first_batch = registry.initialize(world);
+
+            THEN("initialize returns only the first plugin") {
+                REQUIRE(first_batch.size() == 1);
+                REQUIRE(std::string(first_batch[0]->name) == "PluginA");
+            }
+        }
+
+        WHEN("a second plugin is added and initialized after the first") {
+            registry.add(&plugin_a);
+            registry.initialize(world);
+
+            registry.add(&plugin_b);
+            auto second_batch = registry.initialize(world);
+
+            THEN("initialize returns only the newly initialized plugin") {
+                REQUIRE(second_batch.size() == 1);
+                REQUIRE(std::string(second_batch[0]->name) == "PluginB");
             }
         }
     }
