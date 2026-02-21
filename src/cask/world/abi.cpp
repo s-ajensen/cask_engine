@@ -2,6 +2,14 @@
 
 extern "C" {
 
+WorldHandle world_create() {
+    return handle_from_world(new World());
+}
+
+void world_destroy(WorldHandle handle) {
+    delete world_from_handle(handle);
+}
+
 uint32_t world_register_component(WorldHandle handle, const char* name) {
     return world_from_handle(handle)->register_component(name);
 }

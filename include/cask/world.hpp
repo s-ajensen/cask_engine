@@ -12,6 +12,18 @@ class WorldView {
 public:
     explicit WorldView(WorldHandle handle) : handle_(handle) {}
 
+    static WorldView create() {
+        return WorldView(world_create());
+    }
+
+    void destroy() {
+        world_destroy(handle_);
+    }
+
+    WorldHandle handle() const {
+        return handle_;
+    }
+
     uint32_t register_component(const char* name) {
         return world_register_component(handle_, name);
     }

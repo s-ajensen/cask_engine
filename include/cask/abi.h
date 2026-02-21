@@ -30,6 +30,9 @@ typedef struct {
 
 typedef void (*ComponentDeleter)(void*);
 
+WorldHandle world_create();
+void world_destroy(WorldHandle handle);
+
 uint32_t world_register_component(WorldHandle handle, const char* name);
 void world_bind(WorldHandle handle, uint32_t component_id, void* data);
 void* world_get_component(WorldHandle handle, uint32_t component_id);
