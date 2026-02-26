@@ -1,4 +1,5 @@
 #include <cask/world/abi_internal.hpp>
+#include <cask/plugin/registry.hpp>
 
 extern "C" {
 
@@ -28,6 +29,14 @@ void* world_resolve_component(WorldHandle handle, const char* name) {
 
 void world_register_and_bind(WorldHandle handle, const char* name, void* data, ComponentDeleter deleter) {
     world_from_handle(handle)->register_and_bind(name, data, deleter);
+}
+
+void initialize_plugins(WorldHandle handle, PluginInfo** plugins, size_t count) {
+    PluginRegistry registry;
+    for (size_t index = 0; index < count; index++) {
+        registry.add(plugins[index]);
+    }
+    registry.initialize(*world_from_handle(handle));
 }
 
 }

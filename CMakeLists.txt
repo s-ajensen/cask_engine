@@ -29,6 +29,7 @@ add_executable(cask_engine_tests
     spec/deps/graph_spec.cpp
     spec/plugin/loader_spec.cpp
     spec/plugin/registry_spec.cpp
+    spec/world/initialize_plugins_spec.cpp
 )
 target_link_libraries(cask_engine_tests PRIVATE cask_engine Catch2::Catch2WithMain)
 target_compile_definitions(cask_engine_tests PRIVATE 

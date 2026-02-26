@@ -38,6 +38,7 @@ void world_bind(WorldHandle handle, uint32_t component_id, void* data);
 void* world_get_component(WorldHandle handle, uint32_t component_id);
 void* world_resolve_component(WorldHandle handle, const char* name);
 void world_register_and_bind(WorldHandle handle, const char* name, void* data, ComponentDeleter deleter);
+void initialize_plugins(WorldHandle handle, PluginInfo** plugins, size_t count);
 
 #ifdef __cplusplus
 }
